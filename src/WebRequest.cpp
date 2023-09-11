@@ -967,25 +967,25 @@ String AsyncWebServerRequest::urlDecode(const String& text) const {
 
 
 const char * AsyncWebServerRequest::methodToString() const {
-  if(_method == HTTP_ANY) return "ANY";
-  else if(_method & HTTP_GET) return "GET";
-  else if(_method & HTTP_POST) return "POST";
-  else if(_method & HTTP_DELETE) return "DELETE";
-  else if(_method & HTTP_PUT) return "PUT";
-  else if(_method & HTTP_PATCH) return "PATCH";
-  else if(_method & HTTP_HEAD) return "HEAD";
-  else if(_method & HTTP_OPTIONS) return "OPTIONS";
-  return "UNKNOWN";
+  if(_method == HTTP_ANY) return  PSTR("ANY");
+  else if(_method & HTTP_GET) return  PSTR("GET");
+  else if(_method & HTTP_POST) return  PSTR("POST");
+  else if(_method & HTTP_DELETE) return  PSTR("DELETE");
+  else if(_method & HTTP_PUT) return  PSTR("PUT");
+  else if(_method & HTTP_PATCH) return  PSTR("PATCH");
+  else if(_method & HTTP_HEAD) return  PSTR("HEAD");
+  else if(_method & HTTP_OPTIONS) return  PSTR("OPTIONS");
+  return  PSTR("UNKNOWN");
 }
 
 const char *AsyncWebServerRequest::requestedConnTypeToString() const {
   switch (_reqconntype) {
-    case RCT_NOT_USED: return "RCT_NOT_USED";
-    case RCT_DEFAULT:  return "RCT_DEFAULT";
-    case RCT_HTTP:     return "RCT_HTTP";
-    case RCT_WS:       return "RCT_WS";
-    case RCT_EVENT:    return "RCT_EVENT";
-    default:           return "ERROR";
+    case RCT_NOT_USED: return  PSTR("RCT_NOT_USED");
+    case RCT_DEFAULT:  return  PSTR("RCT_DEFAULT");
+    case RCT_HTTP:     return  PSTR("RCT_HTTP");
+    case RCT_WS:       return  PSTR("RCT_WS");
+    case RCT_EVENT:    return  PSTR("RCT_EVENT");
+    default:           return  PSTR("ERROR");
   }
 }
 
