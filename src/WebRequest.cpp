@@ -141,7 +141,7 @@ void AsyncWebServerRequest::_onData(void *buf, size_t len){
           _parsedLength += len;
     } else {
       if(_parsedLength == 0){
-        if(_contentType.startsWith(F("application/x-www-form-urlencoded"))){
+        if(_contentType.startsWith("application/x-www-form-urlencoded")){
           _isPlainPost = true;
         } else if(_contentType == "text/plain" && __is_param_char(((char*)buf)[0])){
           size_t i = 0;
@@ -309,7 +309,7 @@ bool AsyncWebServerRequest::_parseReqHeader(){
     String value = _temp.substring(index + 2);
     if(name.equalsIgnoreCase("Host")){
       _host = value;
-    } else if(name.equalsIgnoreCase(F("Content-Type"))){
+    } else if(name.equalsIgnoreCase("Content-Type")){
       if (value.startsWith("multipart/")){
         _boundary = value.substring(value.indexOf('=')+1);
         _boundary.replace("\"","");
@@ -318,7 +318,7 @@ bool AsyncWebServerRequest::_parseReqHeader(){
       } else {
         _contentType = value;
       }
-    } else if(name.equalsIgnoreCase(F("Content-Length"))){
+    } else if(name.equalsIgnoreCase("Content-Length")){
       _contentLength = atoi(value.c_str());
     } else if(name.equalsIgnoreCase("Expect") && value == "100-continue"){
       _expectingContinue = true;
@@ -334,7 +334,7 @@ bool AsyncWebServerRequest::_parseReqHeader(){
         // WebSocket request can be uniquely identified by header: [Upgrade: websocket]
         _reqconntype = RCT_WS;
       } else {
-        if(name.equalsIgnoreCase("Accept") && strContains(value, F("text/event-stream"), false)){
+        if(name.equalsIgnoreCase("Accept") && strContains(value, "text/event-stream", false)){
           // WebEvent request can be uniquely identified by header:  [Accept: text/event-stream]
           _reqconntype = RCT_EVENT;
         }
@@ -842,16 +842,16 @@ bool AsyncWebServerRequest::authenticate(const char * hash){
 void AsyncWebServerRequest::requestAuthentication(const char * realm, bool isDigest){
   AsyncWebServerResponse * r = beginResponse(401);
   if(!isDigest && realm == NULL){
-    r->addHeader(F("WWW-Authenticate"), F("Basic realm=\"Login Required\""));
+    r->addHeader("WWW-Authenticate", "Basic realm=\"Login Required\"");
   } else if(!isDigest){
-    String header = F("Basic realm=\"");
+    String header = "Basic realm=\"";
     header.concat(realm);
     header.concat("\"");
-    r->addHeader(F("WWW-Authenticate"), header);
+    r->addHeader("WWW-Authenticate", header);
   } else {
     String header = "Digest ";
     header.concat(requestDigestAuthentication(realm));
-    r->addHeader(F("WWW-Authenticate"), header);
+    r->addHeader("WWW-Authenticate", header);
   }
   send(r);
 }
@@ -967,25 +967,25 @@ String AsyncWebServerRequest::urlDecode(const String& text) const {
 
 
 const char * AsyncWebServerRequest::methodToString() const {
-  if(_method == HTTP_ANY) return  PSTR("ANY");
-  else if(_method & HTTP_GET) return  PSTR("GET");
-  else if(_method & HTTP_POST) return  PSTR("POST");
-  else if(_method & HTTP_DELETE) return  PSTR("DELETE");
-  else if(_method & HTTP_PUT) return  PSTR("PUT");
-  else if(_method & HTTP_PATCH) return  PSTR("PATCH");
-  else if(_method & HTTP_HEAD) return  PSTR("HEAD");
-  else if(_method & HTTP_OPTIONS) return  PSTR("OPTIONS");
-  return  PSTR("UNKNOWN");
+  if(_method == HTTP_ANY) return "ANY";
+  else if(_method & HTTP_GET) return "GET";
+  else if(_method & HTTP_POST) return "POST";
+  else if(_method & HTTP_DELETE) return "DELETE";
+  else if(_method & HTTP_PUT) return "PUT";
+  else if(_method & HTTP_PATCH) return "PATCH";
+  else if(_method & HTTP_HEAD) return "HEAD";
+  else if(_method & HTTP_OPTIONS) return "OPTIONS";
+  return "UNKNOWN";
 }
 
 const char *AsyncWebServerRequest::requestedConnTypeToString() const {
   switch (_reqconntype) {
-    case RCT_NOT_USED: return  PSTR("RCT_NOT_USED");
-    case RCT_DEFAULT:  return  PSTR("RCT_DEFAULT");
-    case RCT_HTTP:     return  PSTR("RCT_HTTP");
-    case RCT_WS:       return  PSTR("RCT_WS");
-    case RCT_EVENT:    return  PSTR("RCT_EVENT");
-    default:           return  PSTR("ERROR");
+    case RCT_NOT_USED: return "RCT_NOT_USED";
+    case RCT_DEFAULT:  return "RCT_DEFAULT";
+    case RCT_HTTP:     return "RCT_HTTP";
+    case RCT_WS:       return "RCT_WS";
+    case RCT_EVENT:    return "RCT_EVENT";
+    default:           return "ERROR";
   }
 }
 
