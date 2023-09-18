@@ -71,7 +71,7 @@ static bool getMD5(uint8_t * data, uint16_t len, char * output){//33 bytes or mo
   memset(_buf, 0x00, 16);
 #ifdef ESP32
   mbedtls_md5_init(&_ctx);
-  mbedtls_md5_starts(&_ctx);
+  //mbedtls_md5_starts(&_ctx);
   mbedtls_md5_update(&_ctx, data, len);
   mbedtls_md5_finish(&_ctx, _buf);
 #else
