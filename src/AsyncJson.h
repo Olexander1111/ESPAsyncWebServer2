@@ -185,28 +185,27 @@ public:
         return true;
     }
 
- virtual void handleRequest(AsyncWebServerRequest *request) override final {
-
+virtual void handleRequest(AsyncWebServerRequest *request) override final {
     if (_onRequest2) {
         if (_tempObject != nullptr && _tempObjectSize > 0) {
+            // Create a unique pointer for the temporary object to manage its memory automatically
+            std::unique_ptr<char[]> tempObject(static_cast<char*>(_tempObject));
+            
             // Create a gson::string to hold the raw JSON data
-            char out[_tempObjectSize];
-            strncpy(out,static_cast<const char*>(_tempObject),_tempObjectSize);
-            out[_tempObjectSize]='\0';
             gson::string rawJson;
-            rawJson.addTextRaw(out);
+            rawJson.addTextRaw(tempObject.get(), _tempObjectSize);
             _onRequest2(request, rawJson);
-            // Clean up
-            free(_tempObject);
+            
+            // Reset tempObject pointer to release the memory
             _tempObject = nullptr;
             _tempObjectSize = 0;
         } else {
-            //Serial.println(F("AsyncJson.h:No temporary object to process."));
+            // No temporary object to process
             request->send(_contentLength > _maxContentLength ? 413 : 400);
         }
     } else {
-            //Serial.println(F("AsyncJson.h:No request handler defined."));
-            request->send(500);
+        // No request handler defined
+        request->send(500);
     }
 }
 
@@ -232,3 +231,6 @@ public:
     }
     virtual bool isRequestHandlerTrivial() override final { return _onRequest2 ? false : true; }
 };
+
+
+
