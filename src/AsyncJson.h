@@ -8,6 +8,10 @@
 
 constexpr const char* JSON_MIMETYPE = "application/json";
 
+#ifndef CHUNK_OBJ_SIZE
+#define CHUNK_OBJ_SIZE 768
+#endif
+
 class Move {
 public:
     const char* str;
@@ -158,7 +162,7 @@ private:
     Ticker _ticker;
 
     void processNextChunk() {
-        const size_t CHUNK_SIZE = 768;  // Adjust chunk size based on your needs
+        const size_t CHUNK_SIZE = CHUNK_OBJ_SIZE;  // Adjust chunk size based on your needs
         if (_index < _tempObjectSize) {
             size_t chunkLen = (_index + CHUNK_SIZE < _tempObjectSize) ? CHUNK_SIZE : (_tempObjectSize - _index);
 
