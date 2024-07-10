@@ -4,6 +4,7 @@
 #include <StringUtils.h>
 #include <ESPAsyncWebServer.h>
 #include <GSON.h>
+#include <Ticker.h>
 
 constexpr const char* JSON_MIMETYPE = "application/json";
 
@@ -29,7 +30,6 @@ public:
         return *this;
     }
 };
-
 
 class ChunkPrint : public Print {
 private:
@@ -125,29 +125,22 @@ public:
         return true;
     }
 
-  virtual void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) override final {}
+    virtual void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) override final {}
 
-  virtual void handleBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) override final {
-        //Serial.printf("Handling body: index = %d, total = %d, len = %d\n", index, total, len);
-
+    virtual void handleBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) override final {
         if (_onRequest) {
             _contentLength = total;
             if (total > 0 && _tempObject == nullptr && total < _maxContentLength) {
                 _tempObject = malloc(total);
                 _tempObjectSize = total;
-          //      Serial.println("Allocated memory for temporary object.");
             }
             if (_tempObject != nullptr) {
                 memcpy(static_cast<uint8_t*>(_tempObject) + index, data, len);
-            //    Serial.printf("Copied %d bytes to temporary object.\n", len);
-            } else {
-                //Serial.println(F("Failed to allocate memory for temporary object or total size exceeds max limit."));
             }
         }
     }
     virtual bool isRequestHandlerTrivial() override final { return _onRequest ? false : true; }
 };
-
 
 class AsyncCallbackJsonWebHandler2 : public AsyncWebHandler {
 private:
@@ -160,13 +153,45 @@ private:
     void* _tempObject;
     size_t _tempObjectSize;
 
+    AsyncWebServerRequest* _request;
+    size_t _index;
+    Ticker _ticker;
+
+    void processNextChunk() {
+        const size_t CHUNK_SIZE = 768;  // Adjust chunk size based on your needs
+        if (_index < _tempObjectSize) {
+            size_t chunkLen = (_index + CHUNK_SIZE < _tempObjectSize) ? CHUNK_SIZE : (_tempObjectSize - _index);
+
+            // Create a unique pointer for the chunk to manage its memory automatically
+            std::unique_ptr<char[]> chunkObject(new char[chunkLen]);
+            memcpy(chunkObject.get(), static_cast<char*>(_tempObject) + _index, chunkLen);
+
+            // Create a gson::string to hold the raw JSON data chunk
+            gson::string rawJson;
+            rawJson.addTextRaw(chunkObject.get(), chunkLen);
+            
+            // Call the _onRequest2 handler with the chunk
+            _onRequest2(_request, rawJson);
+
+            // Move to the next chunk
+            _index += chunkLen;
+
+            // Schedule the next chunk processing
+            _ticker.once_ms(1, [this]() { this->processNextChunk(); });
+        } else {
+            // Reset tempObject pointer to release the memory
+            _tempObject = nullptr;
+            _tempObjectSize = 0;
+        }
+    }
+
 public:
     AsyncCallbackJsonWebHandler2(const String& uri, ArJsonRequestHandlerFunction2 onRequest) 
         : _uri(uri), _method(HTTP_POST | HTTP_PUT | HTTP_PATCH), _onRequest2(onRequest), _maxContentLength(16384), _tempObject(nullptr), _tempObjectSize(0) {}
+    
     void setMethod(WebRequestMethodComposite method) { _method = method; }
     void setMaxContentLength(int maxContentLength) { _maxContentLength = maxContentLength; }
     void onRequest2(ArJsonRequestHandlerFunction2 fn) { _onRequest2 = fn; }
-
 
     virtual bool canHandle(AsyncWebServerRequest *request) override final {
         if (!_onRequest2)
@@ -185,52 +210,36 @@ public:
         return true;
     }
 
-virtual void handleRequest(AsyncWebServerRequest *request) override final {
-    if (_onRequest2) {
-        if (_tempObject != nullptr && _tempObjectSize > 0) {
-            // Create a unique pointer for the temporary object to manage its memory automatically
-            std::unique_ptr<char[]> tempObject(static_cast<char*>(_tempObject));
-            
-            // Create a gson::string to hold the raw JSON data
-            gson::string rawJson;
-            rawJson.addTextRaw(tempObject.get(), _tempObjectSize);
-            _onRequest2(request, rawJson);
-            
-            // Reset tempObject pointer to release the memory
-            _tempObject = nullptr;
-            _tempObjectSize = 0;
+    virtual void handleRequest(AsyncWebServerRequest *request) override final {
+        if (_onRequest2) {
+            if (_tempObject != nullptr && _tempObjectSize > 0) {
+                _request = request;
+                _index = 0;
+                processNextChunk();  // Start processing the first chunk
+            } else {
+                // No temporary object to process
+                request->send(_contentLength > _maxContentLength ? 413 : 400);
+            }
         } else {
-            // No temporary object to process
-            request->send(_contentLength > _maxContentLength ? 413 : 400);
+            // No request handler defined
+            request->send(500);
         }
-    } else {
-        // No request handler defined
-        request->send(500);
     }
-}
 
     virtual void handleUpload(AsyncWebServerRequest *request, const String& filename, size_t index, uint8_t *data, size_t len, bool final) override final {}
 
-  virtual void handleBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) override final {
-        //Serial.printf("Handling body: index = %d, total = %d, len = %d\n", index, total, len);
-
+    virtual void handleBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) override final {
         if (_onRequest2) {
             _contentLength = total;
             if (total > 0 && _tempObject == nullptr && total < _maxContentLength) {
                 _tempObject = malloc(total);
                 _tempObjectSize = total;
-                //Serial.println("Allocated memory for temporary object.");
             }
             if (_tempObject != nullptr) {
                 memcpy(static_cast<uint8_t*>(_tempObject) + index, data, len);
-                //Serial.printf("Copied %d bytes to temporary object.\n", len);
-            } else {
-                //Serial.println("Failed to allocate memory for temporary object or total size exceeds max limit.");
             }
         }
     }
+
     virtual bool isRequestHandlerTrivial() override final { return _onRequest2 ? false : true; }
 };
-
-
-
