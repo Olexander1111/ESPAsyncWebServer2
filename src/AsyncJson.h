@@ -106,7 +106,7 @@ private:
 
 public:
     AsyncCallbackJsonWebHandler(const String& uri, ArJsonRequestHandlerFunction onRequest) 
-        : _uri(uri), _method(HTTP_POST | HTTP_PUT | HTTP_PATCH), _onRequest(onRequest), _maxContentLength(16384), _tempObject(nullptr), _tempObjectSize(0) {}
+        : _uri(uri), _method(HTTP_POST | HTTP_PUT | HTTP_PATCH), _onRequest(onRequest), _maxContentLength(8096), _tempObject(nullptr), _tempObjectSize(0) {}
 
     void setMethod(WebRequestMethodComposite method) { _method = method; }
     void setMaxContentLength(int maxContentLength) { _maxContentLength = maxContentLength; }
@@ -162,7 +162,7 @@ private:
     Ticker _ticker;
 
     void processNextChunk() {
-        const size_t CHUNK_SIZE = CHUNK_OBJ_SIZE;  // Adjust chunk size based on your needs
+        const size_t CHUNK_SIZE = CHUNK_OBJ_SIZE;  // Adjust chunk size
         if (_index < _tempObjectSize) {
             size_t chunkLen = (_index + CHUNK_SIZE < _tempObjectSize) ? CHUNK_SIZE : (_tempObjectSize - _index);
 
@@ -181,7 +181,7 @@ private:
             _index += chunkLen;
 
             // Schedule the next chunk processing
-            _ticker.once_ms(1, [this]() { this->processNextChunk(); });
+            _ticker.once_ms(5, [this]() { this->processNextChunk(); });
         } else {
             // Reset tempObject pointer to release the memory
             _tempObject = nullptr;
