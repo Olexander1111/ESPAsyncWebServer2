@@ -162,31 +162,46 @@ private:
     Ticker _ticker;
 
     void processNextChunk() {
+
+#ifdef ESP8266        
         const size_t CHUNK_SIZE = CHUNK_OBJ_SIZE;  // Adjust chunk size
         if (_index < _tempObjectSize) {
             size_t chunkLen = (_index + CHUNK_SIZE < _tempObjectSize) ? CHUNK_SIZE : (_tempObjectSize - _index);
-
             // Create a unique pointer for the chunk to manage its memory automatically
             std::unique_ptr<char[]> chunkObject(new char[chunkLen]);
             memcpy(chunkObject.get(), static_cast<char*>(_tempObject) + _index, chunkLen);
-
             // Create a gson::string to hold the raw JSON data chunk
             gson::string rawJson;
             rawJson.addTextRaw(chunkObject.get(), chunkLen);
-            
             // Call the _onRequest2 handler with the chunk
             _onRequest2(_request, rawJson);
-
             // Move to the next chunk
             _index += chunkLen;
-
             // Schedule the next chunk processing
-            _ticker.once_ms(5, [this]() { this->processNextChunk(); });
+            _ticker.once_ms(5, [this]() {this->processNextChunk();});
         } else {
             // Reset tempObject pointer to release the memory
             _tempObject = nullptr;
             _tempObjectSize = 0;
         }
+        #endif
+        #ifdef ESP32
+        if (_tempObjectSize > 0) {
+        // Create a unique pointer for the entire data object
+        std::unique_ptr<char[]> fullObject(new char[_tempObjectSize]);
+        memcpy(fullObject.get(), _tempObject, _tempObjectSize);
+        // Create a gson::string to hold the raw JSON data
+        gson::string rawJson;
+        rawJson.addTextRaw(fullObject.get(), _tempObjectSize);
+        // Call the _onRequest2 handler with the full object
+        _onRequest2(_request, rawJson);
+        // Reset tempObject pointer to release the memory
+        _tempObject = nullptr;
+        _tempObjectSize = 0;
+        }else{
+         // (e.g., log a warning or error if necessary)   
+        }
+        #endif
     }
 
 public:
